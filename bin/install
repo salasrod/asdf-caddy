@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+
+# Documentation originally from: https://github.com/asdf-vm/asdf/blob/master/docs/plugins-create.md
+#
+# This script should install the version, in the path mentioned in ASDF_INSTALL_PATH.
+#
+# The install script should exit with a status of 0 when the installation is successful.
+# If the installation fails the script should exit with any non-zero exit status.
+#
+# If possible the script should only place files in the ASDF_INSTALL_PATH directory once
+# the build and installation of the tool is deemed successful by the install script.
+# asdf checks for the existence of the ASDF_INSTALL_PATH directory in order to determine
+# if that version of the tool is installed. If the ASDF_INSTALL_PATH directory is populated
+# at the beginning of the installation process other asdf commands run in other terminals
+# during the installation may consider that version of the tool installed,
+# even when it is not fully installed.
+
+set -ex
+set -o pipefail
+
+github_coordinates="caddyserver/caddy"
+releases_path="https://api.github.com/repos/${github_coordinates}/releases"
+tool_name="caddy"
+
+install_tool() {
+  local version=$2
+  local install_path=$3
+  local tmp_download_dir=$4
+  local binary_name=$5
+
+  local platform
+  local bin_install_path="$install_path/bin"
+  local binary_path="$bin_install_path/${binary_name}"
+  local download_url
+  local download_path
+  local download_bin_path
+
+  platform=$(get_platform "$version")
+  download_url=$(get_download_url "$version" "$platform")
+  download_filename="$(get_filename "$version" "$binary_name" "$download_url")"
+  download_path="$tmp_download_dir/$download_filename"
+
+  echo "Downloading [${binary_name}] from ${download_url} to ${download_path}"
+  curl -Lo "$download_path" "$download_url"
+
+  local download_bin_path
+
+  # Extract if the file is a tar.gz or a zip file
+  if [[ "${download_url}" =~ .tar.gz ]]  ; then
+    local download_filename
+
+    download_filename="$(get_filename "$version" "$binary_name" "")"
+    download_bin_path="$tmp_download_dir/$download_filename"
+
+    echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
+    tar xzpf "${download_path}" -C "${tmp_download_dir}"
+    mv "${tmp_download_dir}"/caddy "${download_bin_path}"
+  elif [[ "${download_url}" =~ .zip ]]  ; then
+    local download_filename
+
+    download_filename="$(get_filename "$version" "$binary_name" "")"
+    download_bin_path="$tmp_download_dir/$download_filename"
+
+    echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
+    unzip "${download_path}" -d "${tmp_download_dir}"
+    mv "${tmp_download_dir}"/caddy "${download_bin_path}"
+  else
+    download_bin_path=${download_path}
+  fi
+
+  echo "Creating bin directory"
+  mkdir -p "${bin_install_path}"
+
+  echo "Cleaning previous binaries"
+  rm -f "$binary_path" 2>/dev/null || true
+
+  echo "Copying binary"
+  cp "${download_bin_path}" "${binary_path}"
+  chmod +x "${binary_path}"
+}
+
+get_platform() {
+    local version="$1"
+
+    if [[ "$(uname)" == "Linux" ]]
+    then
+        echo "linux_amd64"
+    else
+      if [[ "$version" =~ ^1.* ]] ; then
+        echo "darwin"
+      else
+        echo "macos"
+      fi
+    fi
+}
+
+do_extract_if_needed() {
+  local binary_name="$1"
+  local version="$2"
+  local tmp_download_dir="$3"
+
+
+}
+
+get_filename() {
+  local version="$1"
+  local binary_name="$2"
+  local download_url="$3"
+
+  if [[ "${download_url}" =~ .tar.gz$ ]]; then
+    echo "${binary_name}-${version}.tar.gz"
+  elif [[ "${download_url}" =~ .zip$ ]]; then
+    echo "${binary_name}-${version}.zip"
+  else
+    echo "${binary_name}-${version}"
+  fi
+}
+
+get_cmd() {
+  local cmd="curl -s"
+  if [ -n "$GITHUB_API_TOKEN" ]; then
+    cmd="$cmd -H 'Authorization: token $GITHUB_API_TOKEN'"
+  fi
+  echo "$cmd $releases_path"
+}
+
+get_download_url() {
+  cmd="$(get_cmd)"
+
+  local version="$1"
+  local platform="$2"
+  local download_url
+
+  download_url=$(eval "$cmd" | \
+      tee | \
+      grep -oE "browser_download_url\": \".*\"" | \
+      grep "/v$1/" | \
+      grep "_$2" | \
+      sed 's/browser_download_url\": *\"//;s/\"//'
+    )
+
+  echo "$download_url"
+}
+
+tmp_download_dir="$(mktemp -d -t 'asdf_XXXXXXXX')"
+trap 'rm -rf "${tmp_download_dir}"' EXIT
+install_tool "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_INSTALL_PATH" "$tmp_download_dir" "$tool_name"

@@ -1,0 +1,27 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        version: [
+          ['1.0.0', 'caddy -version'],
+          ['2.0.0-beta.14', 'caddy version']
+        ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install asdf
+        run: |
+          git clone https://github.com/asdf-vm/asdf.git $HOME/asdf
+      - name: Test the plugin
+        run: |
+          . $HOME/asdf/asdf.sh
+          GITHUB_API_TOKEN=${{secrets.GITHUB_TOKEN}} asdf plugin-test mkcert $GITHUB_WORKSPACE '${{matrix.version[1]}}' --asdf-tool-version ${{matrix.version[0]}}
