@@ -15,7 +15,7 @@
 # during the installation may consider that version of the tool installed,
 # even when it is not fully installed.
 
-set -ex
+set -e
 set -o pipefail
 
 github_coordinates="caddyserver/caddy"
