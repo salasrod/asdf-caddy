@@ -31,6 +31,7 @@ install_tool() {
   local platform
   local bin_install_path="$install_path/bin"
   local binary_path="$bin_install_path/${binary_name}"
+  local tmp_extract_path="${tmp_download_dir}/extract"
   local download_url
   local download_path
   local download_bin_path
@@ -44,26 +45,22 @@ install_tool() {
   curl -Lo "$download_path" "$download_url"
 
   local download_bin_path
+  local download_filename
+
+  download_filename="$(get_filename "$version" "$binary_name" "")"
+  download_bin_path="$tmp_download_dir/$download_filename"
+
+  mkdir -p "${tmp_extract_path}"
 
   # Extract if the file is a tar.gz or a zip file
-  if [[ "${download_url}" =~ .tar.gz ]]  ; then
-    local download_filename
-
-    download_filename="$(get_filename "$version" "$binary_name" "")"
-    download_bin_path="$tmp_download_dir/$download_filename"
-
+  if [[ "${download_url}" =~ .tar.gz ]] ; then
     echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
-    tar xzpf "${download_path}" -C "${tmp_download_dir}"
-    mv "${tmp_download_dir}"/caddy "${download_bin_path}"
+    tar xzpf "${download_path}" -C "${tmp_extract_path}"
+    download_bin_path="${tmp_extract_path}"/caddy
   elif [[ "${download_url}" =~ .zip ]]  ; then
-    local download_filename
-
-    download_filename="$(get_filename "$version" "$binary_name" "")"
-    download_bin_path="$tmp_download_dir/$download_filename"
-
     echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
-    unzip "${download_path}" -d "${tmp_download_dir}"
-    mv "${tmp_download_dir}"/caddy "${download_bin_path}"
+    unzip "${download_path}" -d "${tmp_extract_path}"
+    download_bin_path="${tmp_extract_path}"/caddy
   else
     download_bin_path=${download_path}
   fi
@@ -75,6 +72,8 @@ install_tool() {
   rm -f "$binary_path" 2>/dev/null || true
 
   echo "Copying binary"
+  ls -lah "${download_bin_path}"
+  echo cp "${download_bin_path}" "${binary_path}"
   cp "${download_bin_path}" "${binary_path}"
   chmod +x "${binary_path}"
 }
@@ -88,8 +87,10 @@ get_platform() {
     else
       if [[ "$version" =~ ^1.* ]] ; then
         echo "darwin"
-      else
+      elif [[ "$version" =~ ^2.0.0-beta* ]] ; then
         echo "macos"
+      else
+        echo "mac"
       fi
     fi
 }
@@ -98,8 +99,6 @@ do_extract_if_needed() {
   local binary_name="$1"
   local version="$2"
   local tmp_download_dir="$3"
-
-
 }
 
 get_filename() {
@@ -134,8 +133,9 @@ get_download_url() {
   download_url=$(eval "$cmd" | \
       tee | \
       grep -oE "browser_download_url\": \".*\"" | \
-      grep "/v$1/" | \
-      grep "_$2" | \
+      grep "/v${version}/" | \
+      grep "_${platform}" | \
+      grep -v -- ".deb" | \
       sed 's/browser_download_url\": *\"//;s/\"//'
     )
 

@@ -9,7 +9,9 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
         version: [
           ['1.0.0', 'caddy -version'],
-          ['2.0.0-beta.14', 'caddy version']
+          ['2.0.0-beta.14', 'caddy version'],
+          ['2.0.0-rc.2', 'caddy version'],
+          ['2.0.0', 'caddy version']
         ]
 
     runs-on: ${{ matrix.os }}
@@ -20,8 +22,8 @@ jobs:
 
       - name: Install asdf
         run: |
-          git clone https://github.com/asdf-vm/asdf.git $HOME/asdf --branch v0.7.6
+          git clone https://github.com/asdf-vm/asdf.git $HOME/asdf --branch v0.7.8
       - name: Test the plugin
         run: |
           . $HOME/asdf/asdf.sh
-          GITHUB_API_TOKEN=${{secrets.GITHUB_TOKEN}} asdf plugin-test mkcert $GITHUB_WORKSPACE '${{matrix.version[1]}}' --asdf-tool-version ${{matrix.version[0]}} --asdf-plugin-gitref $GITHUB_SHA
+          GITHUB_API_TOKEN='${{secrets.GITHUB_TOKEN}}' asdf plugin-test caddy $GITHUB_WORKSPACE '${{matrix.version[1]}}' --asdf-tool-version '${{matrix.version[0]}}' --asdf-plugin-gitref $GITHUB_SHA '${{matrix.version[2]}}'
