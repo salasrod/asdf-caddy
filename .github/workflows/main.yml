@@ -11,7 +11,7 @@ jobs:
           ['1.0.0', 'caddy -version'],
           ['2.0.0-beta.14', 'caddy version'],
           ['2.0.0-rc.2', 'caddy version'],
-          ['2.0.0', 'caddy version']
+          ['2.1.0', 'caddy version']
         ]
 
     runs-on: ${{ matrix.os }}
