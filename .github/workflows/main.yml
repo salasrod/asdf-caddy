@@ -25,4 +25,4 @@ jobs:
       - name: Test the plugin
         run: |
           . $HOME/asdf/asdf.sh
-          GITHUB_API_TOKEN='${{secrets.GITHUB_TOKEN}}' asdf plugin-test caddy "$GITHUB_WORKSPACE" --asdf-tool-version '${{matrix.version[0]}}' --asdf-plugin-gitref "$GITHUB_SHA" 'caddy version'
+          GITHUB_API_TOKEN='${{ github.token }}' asdf plugin-test caddy "${{ github.workspace }}" --asdf-tool-version '${{matrix.version[0]}}' --asdf-plugin-gitref "${{ github.sha }}" 'caddy version'
