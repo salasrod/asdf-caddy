@@ -1,17 +1,22 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  push:
+    paths-ignore:
+      - "**.md"
+  schedule:
+    - cron: 0 0 * * 5
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest]
-        version: [
-          '2.1.0',
-          '2.2.0',
-          '2.3.0-beta.1'
-        ]
+        os: 
+          - ubuntu-latest
+          - macOS-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -20,9 +25,8 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install asdf
-        run: |
-          git clone https://github.com/asdf-vm/asdf.git $HOME/asdf --branch v0.8.0
-      - name: Test the plugin
-        run: |
-          . $HOME/asdf/asdf.sh
-          GITHUB_API_TOKEN='${{ github.token }}' asdf plugin-test caddy "${{ github.workspace }}" --asdf-tool-version '${{matrix.version[0]}}' --asdf-plugin-gitref "${{ github.sha }}" 'caddy version'
+        uses: asdf-vm/actions/plugin-test@v1
+        with:
+          command: caddy version
+        env:
+          GITHUB_API_TOKEN: ${{ github.token }}
