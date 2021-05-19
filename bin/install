@@ -17,8 +17,6 @@
 
 set -e
 set -o pipefail
-set -x 
-set -a
 
 github_coordinates="caddyserver/caddy"
 releases_path="https://api.github.com/repos/${github_coordinates}/releases"
