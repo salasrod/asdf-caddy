@@ -129,14 +129,24 @@ get_download_url() {
   local version="$1"
   local platform="$2"
   local download_url
-
+  
+  machine=$(uname -m)
+  case $machine in
+    i?86)
+      machine=amd64
+      ;;
+    aarch64)
+      machine=arm64
+      ;;
+  esac
   download_url=$(eval "$cmd" | \
       tee | \
       grep -oE "browser_download_url\": \".*\"" | \
       grep "/v${version}/" | \
       grep "_${platform}" | \
       grep -v -- ".deb" | \
-      sed 's/browser_download_url\": *\"//;s/\"//'
+      sed 's/browser_download_url\": *\"//;s/\"//' | \
+      grep "$machine"
     )
 
   echo "$download_url"
