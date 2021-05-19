@@ -23,139 +23,140 @@ releases_path="https://api.github.com/repos/${github_coordinates}/releases"
 tool_name="caddy"
 
 install_tool() {
-  local version=$2
-  local install_path=$3
-  local tmp_download_dir=$4
-  local binary_name=$5
+	local version=$2
+	local install_path=$3
+	local tmp_download_dir=$4
+	local binary_name=$5
 
-  local platform
-  local bin_install_path="$install_path/bin"
-  local binary_path="$bin_install_path/${binary_name}"
-  local tmp_extract_path="${tmp_download_dir}/extract"
-  local download_url
-  local download_path
-  local download_bin_path
+	local platform
+	local bin_install_path="$install_path/bin"
+	local binary_path="$bin_install_path/${binary_name}"
+	local tmp_extract_path="${tmp_download_dir}/extract"
+	local download_url
+	local download_path
+	local download_bin_path
 
-  platform=$(get_platform "$version")
-  download_url=$(get_download_url "$version" "$platform")
-  download_filename="$(get_filename "$version" "$binary_name" "$download_url")"
-  download_path="$tmp_download_dir/$download_filename"
+	platform=$(get_platform "$version")
+	download_url=$(get_download_url "$version" "$platform")
+	download_filename="$(get_filename "$version" "$binary_name" "$download_url")"
+	download_path="$tmp_download_dir/$download_filename"
 
-  echo "Downloading [${binary_name}] from ${download_url} to ${download_path}"
-  curl -Lo "$download_path" "$download_url"
+	echo "Downloading [${binary_name}] from ${download_url} to ${download_path}"
+	curl -Lo "$download_path" "$download_url"
 
-  local download_bin_path
-  local download_filename
+	local download_bin_path
+	local download_filename
 
-  download_filename="$(get_filename "$version" "$binary_name" "")"
-  download_bin_path="$tmp_download_dir/$download_filename"
+	download_filename="$(get_filename "$version" "$binary_name" "")"
+	download_bin_path="$tmp_download_dir/$download_filename"
 
-  mkdir -p "${tmp_extract_path}"
+	mkdir -p "${tmp_extract_path}"
 
-  # Extract if the file is a tar.gz or a zip file
-  if [[ "${download_url}" =~ .tar.gz ]] ; then
-    echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
-    tar xzpf "${download_path}" -C "${tmp_extract_path}"
-    download_bin_path="${tmp_extract_path}"/caddy
-  elif [[ "${download_url}" =~ .zip ]]  ; then
-    echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
-    unzip "${download_path}" -d "${tmp_extract_path}"
-    download_bin_path="${tmp_extract_path}"/caddy
-  else
-    download_bin_path=${download_path}
-  fi
+	# Extract if the file is a tar.gz or a zip file
+	if [[ "${download_url}" =~ .tar.gz ]]; then
+		echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
+		tar xzpf "${download_path}" -C "${tmp_extract_path}"
+		download_bin_path="${tmp_extract_path}"/caddy
+	elif [[ "${download_url}" =~ .zip ]]; then
+		echo "Extracting [${binary_name}] from ${download_path} to ${tmp_download_dir}"
+		unzip "${download_path}" -d "${tmp_extract_path}"
+		download_bin_path="${tmp_extract_path}"/caddy
+	else
+		download_bin_path=${download_path}
+	fi
 
-  echo "Creating bin directory"
-  mkdir -p "${bin_install_path}"
+	echo "Creating bin directory"
+	mkdir -p "${bin_install_path}"
 
-  echo "Cleaning previous binaries"
-  rm -f "$binary_path" 2>/dev/null || true
+	echo "Cleaning previous binaries"
+	rm -f "$binary_path" 2>/dev/null || true
 
-  echo "Copying binary"
-  ls -lah "${download_bin_path}"
-  echo cp "${download_bin_path}" "${binary_path}"
-  cp "${download_bin_path}" "${binary_path}"
-  chmod +x "${binary_path}"
+	echo "Copying binary"
+	ls -lah "${download_bin_path}"
+	echo cp "${download_bin_path}" "${binary_path}"
+	cp "${download_bin_path}" "${binary_path}"
+	chmod +x "${binary_path}"
 }
 
 get_platform() {
-    local version="$1"
+	local version="$1"
 
-    if [[ "$(uname)" == "Linux" ]]
-    then
-        echo "linux"
-    else
-      if [[ "$version" =~ ^1.* ]] ; then
-        echo "darwin"
-      elif [[ "$version" =~ ^2.0.0-beta* ]] ; then
-        echo "macos"
-      else
-        echo "mac"
-      fi
-    fi
+	if [[ "$(uname)" == "Linux" ]]; then
+		echo "linux"
+	else
+		if [[ "$version" =~ ^1.* ]]; then
+			echo "darwin"
+		elif [[ "$version" =~ ^2.0.0-beta* ]]; then
+			echo "macos"
+		else
+			echo "mac"
+		fi
+	fi
 }
 
 do_extract_if_needed() {
-  local binary_name="$1"
-  local version="$2"
-  local tmp_download_dir="$3"
+	local binary_name="$1"
+	local version="$2"
+	local tmp_download_dir="$3"
 }
 
 get_filename() {
-  local version="$1"
-  local binary_name="$2"
-  local download_url="$3"
+	local version="$1"
+	local binary_name="$2"
+	local download_url="$3"
 
-  if [[ "${download_url}" =~ .tar.gz$ ]]; then
-    echo "${binary_name}-${version}.tar.gz"
-  elif [[ "${download_url}" =~ .zip$ ]]; then
-    echo "${binary_name}-${version}.zip"
-  else
-    echo "${binary_name}-${version}"
-  fi
+	if [[ "${download_url}" =~ .tar.gz$ ]]; then
+		echo "${binary_name}-${version}.tar.gz"
+	elif [[ "${download_url}" =~ .zip$ ]]; then
+		echo "${binary_name}-${version}.zip"
+	else
+		echo "${binary_name}-${version}"
+	fi
 }
 
 get_cmd() {
-  local cmd="curl -s"
-  if [ -n "$GITHUB_API_TOKEN" ]; then
-    cmd="$cmd -H 'Authorization: token $GITHUB_API_TOKEN'"
-  fi
-  echo "$cmd $releases_path"
+	local cmd="curl -s"
+	if [ -n "$GITHUB_API_TOKEN" ]; then
+		cmd="$cmd -H 'Authorization: token $GITHUB_API_TOKEN'"
+	fi
+	echo "$cmd $releases_path"
 }
 
 detect_arch() {
-  machine=$(uname -m)
-  case "${machine}" in
-    x86_64)
-      echo "amd64"
-      ;;
-    aarch64)
-      echo "arm64"
-      ;;
-    *)
-      echo "Arch Not Supported"
-  esac
+	machine=$(uname -m)
+	case "${machine}" in
+	x86_64)
+		echo "amd64"
+		;;
+	aarch64)
+		echo "arm64"
+		;;
+	*)
+		echo "Arch Not Supported"
+		;;
+	esac
 }
 
 get_download_url() {
-  cmd="$(get_cmd)"
+	cmd="$(get_cmd)"
 
-  local version="$1"
-  local platform="$2"
-  local download_url
-    
-  machine="$(detect_arch)"
-  download_url=$(eval "$cmd" | \
-      tee | \
-      grep -oE "browser_download_url\": \".*\"" | \
-      grep "/v${version}/" | \
-      grep "_${platform}" | \
-      grep "_${machine}" | \
-      grep -v -- ".deb" | \
-      sed 's/browser_download_url\": *\"//;s/\"//' 
-    )
+	local version="$1"
+	local platform="$2"
+	local download_url
 
-  echo "$download_url"
+	machine="$(detect_arch)"
+	download_url=$(
+		eval "$cmd" |
+			tee |
+			grep -oE "browser_download_url\": \".*\"" |
+			grep "/v${version}/" |
+			grep "_${platform}" |
+			grep "_${machine}" |
+			grep -v -- ".deb" |
+			sed 's/browser_download_url\": *\"//;s/\"//'
+	)
+
+	echo "$download_url"
 }
 
 tmp_download_dir="$(mktemp -d -t 'asdf_XXXXXXXX')"
