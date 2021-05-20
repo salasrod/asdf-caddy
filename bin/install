@@ -132,7 +132,7 @@ detect_arch() {
 		echo "arm64"
 		;;
 	*)
-		echo "Arch Not Supported"
+		echo "${machine}"
 		;;
 	esac
 }
