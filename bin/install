@@ -17,6 +17,7 @@
 
 set -e
 set -o pipefail
+set -
 
 github_coordinates="caddyserver/caddy"
 releases_path="https://api.github.com/repos/${github_coordinates}/releases"
@@ -109,8 +110,6 @@ get_filename() {
 		echo "${binary_name}-${version}.tar.gz"
 	elif [[ "${download_url}" =~ .zip$ ]]; then
 		echo "${binary_name}-${version}.zip"
-	else
-		echo "${binary_name}-${version}"
 	fi
 }
 
@@ -152,7 +151,7 @@ get_download_url() {
 			grep "/v${version}/" |
 			grep "_${platform}" |
 			grep "_${machine}" |
-			grep -v -- ".deb" |
+			awk '/.tar.gz|.zip/ && !/.sig/' |
 			sed 's/browser_download_url\": *\"//;s/\"//'
 	)
 
